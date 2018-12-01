@@ -23,4 +23,37 @@ mod tests {
             .fold(0, |a, b| a + b);
         assert_eq!(486, sum);
     }
+
+    #[test]
+    fn day01b() {
+        use std::collections::HashSet;
+
+        let input = load("01a.txt");
+        let mut observed: HashSet<isize> = HashSet::new();
+        let mut acc: isize = 0;
+
+        // Frequency starts at acc
+        observed.insert(acc);
+        
+        // Skip last line, which is empty
+        let lines: Vec<&str> = input.split('\n').collect();
+        let (_, valid_lines) = lines.split_last().unwrap();
+        
+        let deltas: Vec<isize> = valid_lines.into_iter()
+            .map(|line| parse::signed_integer(&line))
+            .collect();
+        
+        // Repeat pattern until a frequency is observed twice
+        'outer: for round in std::iter::repeat(deltas) {
+            for x in round {
+                acc += x;
+                let is_new = observed.insert(acc);
+                if !is_new {
+                    break 'outer;
+                }
+            }
+        }
+        
+        assert_eq!(69285, acc);
+    }
 }

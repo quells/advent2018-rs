@@ -35,11 +35,9 @@ mod tests {
         // Frequency starts at acc
         observed.insert(acc);
         
-        // Skip last line, which is empty
-        let lines: Vec<&str> = input.split('\n').collect();
-        let (_, valid_lines) = lines.split_last().unwrap();
-        
-        let deltas: Vec<isize> = valid_lines.into_iter()
+        // Skip empty lines
+        let deltas: Vec<isize> = input.split('\n')
+            .filter(|line| line.len() > 0)
             .map(|line| parse::signed_integer(&line))
             .collect();
         

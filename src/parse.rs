@@ -22,19 +22,17 @@ pub fn signed_integer(src: &str) -> isize {
 }
 
 #[allow(dead_code)]
-pub fn contains_repeated_characters(src: &str, count: usize) -> bool {
+pub fn count_repeated_characters(src: &str) -> HashSet<usize> {
     let mut char_counts: HashMap<char, usize> = HashMap::new();
     for c in src.chars() {
         let count = char_counts.get(&c).unwrap_or(&0) + 1;
         char_counts.insert(c, count);
     }
 
-    let counts: HashSet<usize> = char_counts.into_iter()
+    char_counts.into_iter()
         .map(|(_, count)| count)
         .filter(|x| *x > 1)
-        .collect();
-    
-    counts.contains(&count)
+        .collect()
 }
 
 #[cfg(test)]
@@ -61,32 +59,37 @@ mod tests {
 
     #[test]
     fn test_contains_repeated_characters() {
-        let test_vectors: Vec<(&str, usize, bool)> = vec![
-            ("abcdef", 2, false), ("abcdef", 3, false),
-            ("bababc", 2, true), ("bababc", 3, true),
-            ("abbcde", 2, true), ("abbcde", 3, false),
-            ("abcccd", 2, false), ("abcccd", 3, true),
-            ("aabcdd", 2, true), ("aabcdd", 3, false),
-            ("abcdee", 2, true), ("abcdee", 3, false),
-            ("ababab", 2, false), ("ababab", 3, true),
+        // (input, contains_twice, contains_thrice)
+        let test_vectors: Vec<(&str, bool, bool)> = vec![
+            ("abcdef", false, false),
+            ("bababc", true, true),
+            ("abbcde", true, false),
+            ("abcccd", false, true),
+            ("aabcdd", true, false),
+            ("abcdee", true, false),
+            ("ababab", false, true),
         ];
 
-        for (input, count, expected) in test_vectors {
-            assert_eq!(expected, contains_repeated_characters(input, count));
+        for (input, expect_twice, expect_thrice) in test_vectors {
+            let counts = count_repeated_characters(input);
+            assert_eq!(expect_twice, counts.contains(&2));
+            assert_eq!(expect_thrice, counts.contains(&3));
         }
     }
 
     #[test]
     fn test_contains_repeated_characters_checksum() {
         let lines = vec!["abcdef", "bababc", "abbcde", "abcccd", "aabcdd", "abcdee", "ababab"];
+        let counts: Vec<HashSet<usize>> = lines.into_iter()
+            .map(|l| count_repeated_characters(l))
+            .collect();
         
-        let twice = (&lines).into_iter()
-            .filter(|l| contains_repeated_characters(l, 2))
+        let twice = (&counts).into_iter()
+            .filter(|s| s.contains(&2))
             .map(|_| 1usize)
             .fold(0, |a, b| a + b);
-        
-        let thrice = (&lines).into_iter()
-            .filter(|l| contains_repeated_characters(l, 3))
+        let thrice = (&counts).into_iter()
+            .filter(|s| s.contains(&3))
             .map(|_| 1usize)
             .fold(0, |a, b| a + b);
         

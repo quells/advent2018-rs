@@ -58,15 +58,16 @@ mod tests {
     #[test]
     fn day02a() {
         let input = load("02a.txt");
-        let lines: Vec<&str> = input.split('\n').collect();
-
-        let twice = (&lines).into_iter()
-            .filter(|l| parse::contains_repeated_characters(l, 2))
+        let counts: Vec<_> = input.split('\n')
+            .map(|l| parse::count_repeated_characters(l))
+            .collect();
+        
+        let twice = (&counts).into_iter()
+            .filter(|s| s.contains(&2))
             .map(|_| 1usize)
             .fold(0, |a, b| a + b);
-        
-        let thrice = (&lines).into_iter()
-            .filter(|l| parse::contains_repeated_characters(l, 3))
+        let thrice = (&counts).into_iter()
+            .filter(|s| s.contains(&3))
             .map(|_| 1usize)
             .fold(0, |a, b| a + b);
         

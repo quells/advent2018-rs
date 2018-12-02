@@ -35,6 +35,30 @@ pub fn count_repeated_characters(src: &str) -> HashSet<usize> {
         .collect()
 }
 
+#[inline(always)]
+#[allow(dead_code)]
+pub fn same_characters(a: &str, b: &str) -> String {
+    let a = a.chars();
+    let b = b.chars();
+
+    a.into_iter().zip(b)
+        .filter(|(a, b)| a == b)
+        .map(|(a, _b)| a)
+        .collect()
+}
+
+#[inline(always)]
+#[allow(dead_code)]
+pub fn differing_character_count(a: &str, b: &str) -> usize {
+    let a = a.chars();
+    let b = b.chars();
+
+    a.into_iter().zip(b)
+        .filter(|(a, b)| a != b)
+        .map(|_| 1usize)
+        .fold(0, |a, b| a + b)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::parse::*;
@@ -95,5 +119,33 @@ mod tests {
         
         assert_eq!(4, twice);
         assert_eq!(3, thrice);
+    }
+
+    #[test]
+    fn test_same_characters() {
+        let test_vectors: Vec<(&str, &str, &str)> = vec![
+            ("abcde", "fghij", ""),
+            ("abcde", "axcye", "ace"),
+            ("fghij", "fguij", "fgij"),
+            ("abcde", "abcde", "abcde"),
+        ];
+
+        for (a, b, expected) in test_vectors {
+            assert_eq!(expected, same_characters(a, b));
+        }
+    }
+
+    #[test]
+    fn test_differing_characters() {
+        let test_vectors: Vec<(&str, &str, usize)> = vec![
+            ("abcde", "fghij", 5),
+            ("abcde", "axcye", 2),
+            ("fghij", "fguij", 1),
+            ("abcde", "abcde", 0),
+        ];
+
+        for (a, b, expected) in test_vectors {
+            assert_eq!(expected, differing_character_count(a, b));
+        }
     }
 }

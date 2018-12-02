@@ -74,4 +74,38 @@ mod tests {
         let checksum = twice * thrice;
         assert_eq!(5952, checksum);
     }
+
+    #[test]
+    fn day02b() {
+        let input = load("02a.txt");
+        let mut lines: Vec<&str> = input.split('\n').collect();
+        
+        let mut a = String::new();
+        let mut b = String::new();
+        
+        loop {
+            let l = lines.clone();
+            let (first, rest) = match l.split_first() {
+                Some(x) => x,
+                None => break,
+            };
+            lines = rest.to_vec();
+            
+            let found = rest.into_iter()
+                .filter(|r| parse::differing_character_count(first, r) == 1)
+                .next();
+            match found {
+                Some(other) => {
+                    a = first.to_string();
+                    b = other.to_string();
+                    break;
+                },
+                None => (),
+            }
+        }
+
+        let common = parse::same_characters(&a, &b);
+
+        assert_eq!("krdmtuqjgwfoevnaboxglzjph", common);
+    }
 }

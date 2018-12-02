@@ -54,4 +54,23 @@ mod tests {
         
         assert_eq!(69285, acc);
     }
+
+    #[test]
+    fn day02a() {
+        let input = load("02a.txt");
+        let lines: Vec<&str> = input.split('\n').collect();
+
+        let twice = (&lines).into_iter()
+            .filter(|l| parse::contains_repeated_characters(l, 2))
+            .map(|_| 1usize)
+            .fold(0, |a, b| a + b);
+        
+        let thrice = (&lines).into_iter()
+            .filter(|l| parse::contains_repeated_characters(l, 3))
+            .map(|_| 1usize)
+            .fold(0, |a, b| a + b);
+        
+        let checksum = twice * thrice;
+        assert_eq!(5952, checksum);
+    }
 }

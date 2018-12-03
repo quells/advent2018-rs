@@ -1,9 +1,11 @@
+#[derive(Clone)]
 pub struct Bitmap<A> {
     pub w: usize,
     pub h: usize,
     pub field: Vec<A>,
 }
 
+#[allow(dead_code)]
 impl <A> Bitmap<A>
 where
     A: Clone,

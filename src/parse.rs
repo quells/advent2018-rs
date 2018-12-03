@@ -59,7 +59,7 @@ pub fn differing_character_count(a: &str, b: &str) -> usize {
         .fold(0, |a, b| a + b)
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct FabricClaim {
     pub id: usize,
     pub x: usize,
@@ -68,6 +68,7 @@ pub struct FabricClaim {
     pub h: usize,
 }
 
+#[allow(dead_code)]
 impl FabricClaim {
     pub fn new(id: usize, x: usize, y: usize, w: usize, h: usize) -> FabricClaim {
         FabricClaim{id, x, y, w, h}

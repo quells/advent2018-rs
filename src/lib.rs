@@ -1,3 +1,4 @@
+mod bitmap;
 mod parse;
 
 use std::io::prelude::Read;
@@ -107,5 +108,33 @@ mod tests {
         let common = parse::same_characters(&a, &b);
 
         assert_eq!("krdmtuqjgwfoevnaboxglzjph", common);
+    }
+
+    #[test]
+    fn day03a() {
+        let input = load("03a.txt");
+        let claims: Vec<parse::FabricClaim> = input.split('\n')
+            .map(|line| parse::FabricClaim::from_str(line))
+            .collect();
+        
+        let (mut w, mut h) = (0, 0);
+        for claim in &claims {
+            let cw = claim.x + claim.w;
+            let ch = claim.y + claim.h;
+            if cw > w { w = cw; }
+            if ch > h { h = ch; }
+        }
+
+        let mut bitmap: bitmap::Bitmap<u16> = bitmap::Bitmap::new(w, h, 0);
+        for claim in &claims {
+            bitmap.draw_rectangle(claim.x, claim.y, claim.w, claim.h, |x| x + 1);
+        }
+
+        let overlaps = bitmap.field.into_iter()
+            .filter(|x| *x > 1)
+            .map(|_| 1usize)
+            .fold(0, |a, b| a + b);
+        
+        assert_eq!(124850, overlaps);
     }
 }

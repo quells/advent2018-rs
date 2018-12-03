@@ -59,6 +59,57 @@ pub fn differing_character_count(a: &str, b: &str) -> usize {
         .fold(0, |a, b| a + b)
 }
 
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub struct FabricClaim {
+    pub id: usize,
+    pub x: usize,
+    pub y: usize,
+    pub w: usize,
+    pub h: usize,
+}
+
+impl FabricClaim {
+    pub fn new(id: usize, x: usize, y: usize, w: usize, h: usize) -> FabricClaim {
+        FabricClaim{id, x, y, w, h}
+    }
+
+    pub fn from_str(spec: &str) -> FabricClaim {
+        // #123 @ 3,2: 5x4
+        let parts: Vec<&str> = spec.split(' ')
+            .filter(|part| part.to_string().len() > 1)
+            .collect();
+        
+        let mut id_chars = parts[0].chars();
+        id_chars.next();
+        let id = usize::from_str(&id_chars.as_str()).unwrap();
+
+        let pos: Vec<&str> = parts[1].split(',')
+            .flat_map(|x| x.split_terminator(':'))
+            .filter(|x| x.to_string().len() > 0)
+            .collect();
+        let x = usize::from_str(&pos[0]).unwrap();
+        let y = usize::from_str(&pos[1]).unwrap();
+
+        let size: Vec<usize> = parts[2].split('x')
+            .map(|x| usize::from_str(x).unwrap())
+            .collect();
+        let w = size[0];
+        let h = size[1];
+        
+        FabricClaim::new(id, x, y, w, h)
+    }
+
+    pub fn area(&self) -> usize {
+        self.w * self.h
+    }
+}
+
+impl std::fmt::Debug for FabricClaim {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "#{} @ {},{}: {}x{}", self.id, self.x, self.y, self.w, self.h)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::parse::*;
@@ -146,6 +197,28 @@ mod tests {
 
         for (a, b, expected) in test_vectors {
             assert_eq!(expected, differing_character_count(a, b));
+        }
+    }
+
+    #[test]
+    fn test_fabric_claim_from_str() {
+        let test_vectors: Vec<(&str, FabricClaim)> = vec![
+            ("#1 @ 123,456: 12x34", FabricClaim::new(1, 123, 456, 12, 34)),
+        ];
+
+        for (input, expected) in test_vectors {
+            assert_eq!(expected, FabricClaim::from_str(input));
+        }
+    }
+
+    #[test]
+    fn test_fabric_claim_area() {
+        let test_vectors: Vec<(&str, usize)> = vec![
+            ("#1 @ 123,456: 12x34", 12*34),
+        ];
+
+        for (input, expected) in test_vectors {
+            assert_eq!(expected, FabricClaim::from_str(input).area());
         }
     }
 }

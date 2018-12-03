@@ -125,7 +125,8 @@ mod tests {
             if ch > h { h = ch; }
         }
 
-        let mut bitmap: bitmap::Bitmap<u16> = bitmap::Bitmap::new(w, h, 0);
+        use crate::bitmap::Bitmap;
+        let mut bitmap: Bitmap<u16> = Bitmap::new(w, h, 0);
         for claim in &claims {
             bitmap.draw_rectangle(claim.x, claim.y, claim.w, claim.h, |x| x + 1);
         }
@@ -136,5 +137,63 @@ mod tests {
             .fold(0, |a, b| a + b);
         
         assert_eq!(124850, overlaps);
+    }
+
+    #[test]
+    fn day03b() {
+        let input = load("03a.txt");
+
+        let claims: Vec<parse::FabricClaim> = input.split('\n')
+            .map(|line| parse::FabricClaim::from_str(line))
+            .collect();
+        
+        let (mut w, mut h) = (0, 0);
+        for claim in &claims {
+            let cw = claim.x + claim.w;
+            let ch = claim.y + claim.h;
+            if cw > w { w = cw; }
+            if ch > h { h = ch; }
+        }
+
+        use std::collections::HashSet;
+        use crate::bitmap::Bitmap;
+        let mut bitmap: Bitmap<HashSet<parse::FabricClaim>> = Bitmap::new(w, h, HashSet::new());
+        for claim in &claims {
+            bitmap.draw_rectangle(claim.x, claim.y, claim.w, claim.h, |pixel| {
+                let mut copy = pixel.clone();
+                copy.insert(*claim);
+                copy
+            });
+        }
+
+        let mut to_delete = HashSet::new();
+        for pixel in &bitmap.field {
+            if pixel.len() > 1 {
+                for claim in pixel {
+                    to_delete.insert(claim);
+                }
+            }
+        }
+
+        let mut mutable_copy = bitmap.clone();
+        for claim in to_delete {
+            mutable_copy.draw_rectangle(claim.x, claim.y, claim.w, claim.h, |p| {
+                let mut copy = p.clone();
+                copy.remove(&claim);
+                copy
+            });
+        }
+        
+        let mut reduced: HashSet<parse::FabricClaim> = HashSet::new();
+        for pixel in mutable_copy.field {
+            for claim in pixel {
+                reduced.insert(claim);
+            }
+        }
+        
+        assert_eq!(1, reduced.len());
+
+        let uncut = reduced.into_iter().next().unwrap();
+        assert_eq!(1097, uncut.id);
     }
 }

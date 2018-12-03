@@ -158,6 +158,8 @@ mod tests {
         use std::collections::HashSet;
         use crate::bitmap::Bitmap;
         let mut bitmap: Bitmap<HashSet<parse::FabricClaim>> = Bitmap::new(w, h, HashSet::new());
+
+        // Paint the bitmap with *all* of the claims on each pixel
         for claim in &claims {
             bitmap.draw_rectangle(claim.x, claim.y, claim.w, claim.h, |pixel| {
                 let mut copy = pixel.clone();
@@ -166,6 +168,7 @@ mod tests {
             });
         }
 
+        // Identify claims which have been painted on the same pixel as other claims
         let mut to_delete = HashSet::new();
         for pixel in &bitmap.field {
             if pixel.len() > 1 {
@@ -175,6 +178,8 @@ mod tests {
             }
         }
 
+        // Un-paint claims marked to be deleted
+        // This is an optimization over scanning the entire bitmap
         let mut mutable_copy = bitmap.clone();
         for claim in to_delete {
             mutable_copy.draw_rectangle(claim.x, claim.y, claim.w, claim.h, |p| {
@@ -184,16 +189,17 @@ mod tests {
             });
         }
         
-        let mut reduced: HashSet<parse::FabricClaim> = HashSet::new();
+        // Grab claims which remain
+        let mut remaining: HashSet<parse::FabricClaim> = HashSet::new();
         for pixel in mutable_copy.field {
             for claim in pixel {
-                reduced.insert(claim);
+                remaining.insert(claim);
             }
         }
         
-        assert_eq!(1, reduced.len());
+        assert_eq!(1, remaining.len());
 
-        let uncut = reduced.into_iter().next().unwrap();
+        let uncut = remaining.into_iter().next().unwrap();
         assert_eq!(1097, uncut.id);
     }
 }

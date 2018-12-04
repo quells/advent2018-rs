@@ -1,3 +1,6 @@
+extern crate time;
+extern crate regex;
+
 mod bitmap;
 mod parse;
 
@@ -201,5 +204,58 @@ mod tests {
 
         let uncut = remaining.into_iter().next().unwrap();
         assert_eq!(1097, uncut.id);
+    }
+
+    #[test]
+    fn day04a() {
+        use std::collections::{BTreeSet, HashMap};
+        use parse::{GuardEvent, GuardLog};
+
+        let input = load("04a.txt");
+        let logs: BTreeSet<GuardLog> = input.split('\n')
+            .map(|line| GuardLog::from_str(line))
+            .collect();
+        let ids: BTreeSet<usize> = (&logs).into_iter()
+            .map(|log| {
+                match log.e {
+                    GuardEvent::BeginShift(id) => Some(id),
+                    _ => None,
+                }
+            })
+            .filter(|id| id.is_some())
+            .map(|id| id.unwrap())
+            .collect();
+        
+        let to_minutes = |log: &GuardLog| {
+            let mut h = log.ts.tm_hour;
+            if h < 12 { h += 24; }
+            (60*h + log.ts.tm_min) as usize
+        };
+        
+        let times: BTreeSet<usize> = (&logs).into_iter()
+            .map(to_minutes)
+            .collect();
+        let min_time = (&times).into_iter().min().unwrap();
+        let max_time = (&times).into_iter().max().unwrap();
+
+        use crate::bitmap::Bitmap;
+
+        let sleep_schedule = Bitmap::new(max_time-min_time, ids.len(), 0usize);
+
+        /*
+        TODO:
+        loop through logs
+        whenever a shift starts, grab the row for that guard id
+        until another shift starts
+            grab falls_asleep to_minute
+            grab wakes_up to_minute
+            subtract min_time to convert to bitmap space
+            draw rectangle in that row from falls_asleep to wakes_up (shifted)
+        count minutes that each guard is asleep (convert values to 1 first to count)
+        find max value in that row
+        convert from bitmap space to time space
+        grab minute
+        multiply minute by guard id
+        */
     }
 }

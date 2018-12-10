@@ -210,12 +210,16 @@ mod tests {
     fn day04a() {
         use std::collections::{BTreeSet, HashMap};
         use parse::{GuardEvent, GuardLog};
+        type RowIndex = usize;
+        type GuardId = usize;
+        type Minute = usize;
 
         let input = load("04a.txt");
         let logs: BTreeSet<GuardLog> = input.split('\n')
             .map(|line| GuardLog::from_str(line))
             .collect();
-        let ids: BTreeSet<usize> = (&logs).into_iter()
+        
+        let unique_guard_ids: BTreeSet<GuardId> = (&logs).into_iter()
             .map(|log| {
                 match log.e {
                     GuardEvent::BeginShift(id) => Some(id),
@@ -225,37 +229,58 @@ mod tests {
             .filter(|id| id.is_some())
             .map(|id| id.unwrap())
             .collect();
-        
-        let to_minutes = |log: &GuardLog| {
-            let mut h = log.ts.tm_hour;
-            if h < 12 { h += 24; }
-            (60*h + log.ts.tm_min) as usize
-        };
-        
-        let times: BTreeSet<usize> = (&logs).into_iter()
-            .map(to_minutes)
+        let guard_ids: Vec<GuardId> = unique_guard_ids.into_iter().collect();
+        let guard_indices: HashMap<GuardId, RowIndex> = (&guard_ids).into_iter()
+            .enumerate()
+            .map(|(row_idx, guard_id)| (*guard_id, row_idx))
             .collect();
-        let min_time = (&times).into_iter().min().unwrap();
-        let max_time = (&times).into_iter().max().unwrap();
 
         use crate::bitmap::Bitmap;
+        let mut sleep_schedule = Bitmap::new(60, guard_ids.len(), 0usize);
 
-        let sleep_schedule = Bitmap::new(max_time-min_time, ids.len(), 0usize);
+        let mut current_guard: Option<GuardId> = None;
+        let mut asleep: Option<Minute> = None;
+        for log in logs {
+            match log.e {
+                GuardEvent::BeginShift(id) => current_guard = Some(id),
+                GuardEvent::FallAsleep => asleep = Some(log.ts.tm_min as usize),
+                GuardEvent::WakeUp => {
+                    let sleep_duration = (log.ts.tm_min as usize) - asleep.unwrap();
+                    let row_idx = (&guard_indices).get(&current_guard.unwrap()).unwrap();
+                    &sleep_schedule.draw_rectangle(asleep.unwrap(), *row_idx, sleep_duration, 1, |x| x + 1);
+                },
+            }
+        }
 
-        /*
-        TODO:
-        loop through logs
-        whenever a shift starts, grab the row for that guard id
-        until another shift starts
-            grab falls_asleep to_minute
-            grab wakes_up to_minute
-            subtract min_time to convert to bitmap space
-            draw rectangle in that row from falls_asleep to wakes_up (shifted)
-        count minutes that each guard is asleep (convert values to 1 first to count)
-        find max value in that row
-        convert from bitmap space to time space
-        grab minute
-        multiply minute by guard id
-        */
+        let (sleepiest_row_index, _) = (&sleep_schedule).rows().into_iter()
+            .map(|row| row.into_iter().sum())
+            .enumerate()
+            .fold((0, 0), |a, b| {
+                let (_, a_count) = a;
+                let (_, b_count) = b;
+                if a_count > b_count {
+                    a
+                } else {
+                    b
+                }
+            });
+        let sleepiest_guard_id = guard_ids.get(sleepiest_row_index).unwrap();
+        
+        let schedule_rows = sleep_schedule.rows();
+        let sleepiest_guard_schedule = schedule_rows.get(sleepiest_row_index).unwrap();
+        let (sleepiest_minute, _) = sleepiest_guard_schedule.into_iter()
+            .enumerate()
+            .fold((0, &0), |a, b| {
+                let (_, a_count) = a;
+                let (_, b_count) = b;
+                if a_count > b_count {
+                    a
+                } else {
+                    b
+                }
+            });
+        
+        let answer = sleepiest_guard_id*sleepiest_minute;
+        assert_eq!(95199, answer);
     }
 }

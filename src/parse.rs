@@ -116,6 +116,7 @@ impl std::fmt::Debug for FabricClaim {
 use time::{Tm, strptime};
 use regex::Regex;
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum GuardEvent {
     BeginShift(usize),
@@ -123,6 +124,7 @@ pub enum GuardEvent {
     WakeUp,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, PartialEq, Eq)]
 pub struct GuardLog {
     pub ts: Tm,
@@ -152,10 +154,12 @@ impl Ord for GuardLog {
     }
 }
 
+#[allow(dead_code)]
 static INIT_GUARDLOG_MATCHER: Once = ONCE_INIT;
 static mut GUARDLOG_MATCHER: Option<Regex> = None;
 static mut GUARDEVENT_MATCHER: Option<Regex> = None;
 
+#[allow(dead_code)]
 impl GuardLog {
     pub fn from_str(s: &str) -> GuardLog {
         INIT_GUARDLOG_MATCHER.call_once(|| {

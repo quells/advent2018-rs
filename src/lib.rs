@@ -360,4 +360,51 @@ mod tests {
         let answer = sleepiest_guard_id*sleepiest_minute;
         assert_eq!(7887, answer);
     }
+
+    #[test]
+    fn day05a() {
+        let input = load("05a.txt");
+        let mut polarized: Vec<i8> = input.into_bytes().into_iter()
+            .map(|c| {
+                let signed = c as i16;
+                match c.is_ascii_uppercase() {
+                    true => signed - ('A' as i16) + 1,
+                    false => ('a' as i16) - signed - 1,
+                }
+            })
+            .map(|c| c as i8)
+            .collect();
+        let mut idx = 0;
+
+        loop {
+            let copy = polarized.clone();
+            if idx >= copy.len() - 1 {
+                break
+            }
+
+            let a = copy.get(idx).unwrap();
+            let b = copy.get(idx+1).unwrap();
+            if a + b == 0 {
+                let mut lhs = copy[.. idx].to_vec();
+                let mut rhs = copy[idx+2 ..].to_vec();
+                lhs.append(&mut rhs);
+                polarized = lhs;
+                if idx > 0 {
+                    idx -= 1;
+                }
+                continue;
+            }
+
+            idx += 1;
+        }
+
+        for (idx, a) in (&polarized).into_iter().enumerate() {
+            if idx < polarized.len() - 1 {
+                let b = -polarized.get(idx+1).unwrap();
+                assert_ne!(*a, b);
+            }
+        }
+
+        assert_eq!(11194, polarized.len());
+    }
 }

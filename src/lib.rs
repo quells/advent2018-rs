@@ -1,5 +1,6 @@
 extern crate time;
 extern crate regex;
+extern crate rayon;
 
 mod bitmap;
 mod parse;
@@ -415,6 +416,8 @@ mod tests {
 
     #[test]
     fn day05b() {
+        use rayon::prelude::*;
+        
         let input = load("05a.txt");
         let polarized: Vec<i8> = input.into_bytes().into_iter()
             .map(|c| {
@@ -427,16 +430,26 @@ mod tests {
             .map(|c| c as i8)
             .collect();
         
-        let mut inhibitor = 0;
-        let mut shortest = std::usize::MAX;
-        for to_remove in 1 ..= 26 {
-            let subset: Vec<_> = (&polarized).into_iter().filter(|x| **x != to_remove && -**x != to_remove).map(|x| *x).collect();
-            let reacted_len = react(&subset).len();
-            if reacted_len < shortest {
-                inhibitor = to_remove;
-                shortest = reacted_len;
-            }
-        }
+        let inhibitors: Vec<i8> = (1 ..= 26).collect();
+        
+        let results: Vec<(i8, usize)> = inhibitors.to_vec().par_iter()
+            .map(|inhibitor| {
+                let subset: Vec<_> = (&polarized).into_iter().filter(|x| **x != *inhibitor && -**x != *inhibitor).map(|x| *x).collect();
+                let reacted_len = react(&subset).len();
+                (*inhibitor, reacted_len)
+            })
+            .collect();
+        
+        let (inhibitor, shortest) = results.into_iter()
+            .fold((0, std::usize::MAX), |a, b| {
+                let (_, a_length) = a;
+                let (_, b_length) = b;
+                if a_length < b_length {
+                    a
+                } else {
+                    b
+                }
+            });
 
         assert_eq!(3, inhibitor);
         assert_eq!(4178, shortest);

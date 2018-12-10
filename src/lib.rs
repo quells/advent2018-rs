@@ -361,10 +361,37 @@ mod tests {
         assert_eq!(7887, answer);
     }
 
+    fn react(polymer: &[i8]) -> Vec<i8> {
+        let mut polymer = polymer.to_vec();
+        let mut idx = 0;
+
+        loop {
+            let copy = polymer.clone();
+            if idx >= copy.len() - 1 {
+                return polymer;
+            }
+
+            let a = copy.get(idx).unwrap();
+            let b = copy.get(idx+1).unwrap();
+            if a + b == 0 {
+                let mut lhs = copy[.. idx].to_vec();
+                let mut rhs = copy[idx+2 ..].to_vec();
+                lhs.append(&mut rhs);
+                polymer = lhs;
+                if idx > 0 {
+                    idx -= 1;
+                }
+                continue;
+            }
+
+            idx += 1;
+        }
+    }
+
     #[test]
     fn day05a() {
         let input = load("05a.txt");
-        let mut polarized: Vec<i8> = input.into_bytes().into_iter()
+        let polarized: Vec<i8> = input.into_bytes().into_iter()
             .map(|c| {
                 let signed = c as i16;
                 match c.is_ascii_uppercase() {
@@ -374,37 +401,44 @@ mod tests {
             })
             .map(|c| c as i8)
             .collect();
-        let mut idx = 0;
+        let reacted = react(&polarized);
 
-        loop {
-            let copy = polarized.clone();
-            if idx >= copy.len() - 1 {
-                break
-            }
-
-            let a = copy.get(idx).unwrap();
-            let b = copy.get(idx+1).unwrap();
-            if a + b == 0 {
-                let mut lhs = copy[.. idx].to_vec();
-                let mut rhs = copy[idx+2 ..].to_vec();
-                lhs.append(&mut rhs);
-                polarized = lhs;
-                if idx > 0 {
-                    idx -= 1;
-                }
-                continue;
-            }
-
-            idx += 1;
-        }
-
-        for (idx, a) in (&polarized).into_iter().enumerate() {
-            if idx < polarized.len() - 1 {
-                let b = -polarized.get(idx+1).unwrap();
+        for (idx, a) in (&reacted).into_iter().enumerate() {
+            if idx < reacted.len() - 1 {
+                let b = -reacted.get(idx+1).unwrap();
                 assert_ne!(*a, b);
             }
         }
 
-        assert_eq!(11194, polarized.len());
+        assert_eq!(11194, reacted.len());
+    }
+
+    #[test]
+    fn day05b() {
+        let input = load("05a.txt");
+        let polarized: Vec<i8> = input.into_bytes().into_iter()
+            .map(|c| {
+                let signed = c as i16;
+                match c.is_ascii_uppercase() {
+                    true => signed - ('A' as i16) + 1,
+                    false => ('a' as i16) - signed - 1,
+                }
+            })
+            .map(|c| c as i8)
+            .collect();
+        
+        let mut inhibitor = 0;
+        let mut shortest = std::usize::MAX;
+        for to_remove in 1 ..= 26 {
+            let subset: Vec<_> = (&polarized).into_iter().filter(|x| **x != to_remove && -**x != to_remove).map(|x| *x).collect();
+            let reacted_len = react(&subset).len();
+            if reacted_len < shortest {
+                inhibitor = to_remove;
+                shortest = reacted_len;
+            }
+        }
+
+        assert_eq!(3, inhibitor);
+        assert_eq!(4178, shortest);
     }
 }

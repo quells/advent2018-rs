@@ -432,7 +432,7 @@ mod tests {
         
         let inhibitors: Vec<i8> = (1 ..= 26).collect();
         
-        let results: Vec<(i8, usize)> = inhibitors.to_vec().par_iter()
+        let results: Vec<(i8, usize)> = inhibitors.par_iter()
             .map(|inhibitor| {
                 let subset: Vec<_> = (&polarized).into_iter().filter(|x| **x != *inhibitor && -**x != *inhibitor).map(|x| *x).collect();
                 let reacted_len = react(&subset).len();
@@ -453,5 +453,16 @@ mod tests {
 
         assert_eq!(3, inhibitor);
         assert_eq!(4178, shortest);
+    }
+
+    #[test]
+    fn day06a() {
+        /*
+        TODO:
+        - Paint bitmap with Voronoi for the given points
+        - Remove any colors which touch the edges
+        - Count the area for each remaining color
+        - The largest area is the solution
+        */
     }
 }

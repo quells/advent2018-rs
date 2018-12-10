@@ -1,5 +1,7 @@
 use std::collections::{HashSet, HashMap};
+use std::cmp::Ordering;
 use std::str::FromStr;
+use std::sync::{Once, ONCE_INIT};
 
 #[allow(dead_code)]
 pub fn signed_integer(src: &str) -> isize {
@@ -108,6 +110,90 @@ impl FabricClaim {
 impl std::fmt::Debug for FabricClaim {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "#{} @ {},{}: {}x{}", self.id, self.x, self.y, self.w, self.h)
+    }
+}
+
+use time::{Tm, strptime};
+use regex::Regex;
+
+#[allow(dead_code)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum GuardEvent {
+    BeginShift(usize),
+    FallAsleep,
+    WakeUp,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, PartialEq, Eq)]
+pub struct GuardLog {
+    pub ts: Tm,
+    pub e: GuardEvent,
+}
+
+impl std::fmt::Debug for GuardLog {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let message = match self.e {
+            GuardEvent::BeginShift(id) => format!("#{} began shift", id),
+            GuardEvent::FallAsleep => "fell asleep".to_string(),
+            GuardEvent::WakeUp => "woke up".to_string(),
+        };
+        write!(f, "[{}] {}", self.ts.strftime("%Y-%m-%d %H:%M").unwrap(), message)
+    }
+}
+
+impl PartialOrd for GuardLog {
+    fn partial_cmp(&self, other: &GuardLog) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for GuardLog {
+    fn cmp(&self, other: &GuardLog) -> Ordering {
+        self.ts.cmp(&other.ts)
+    }
+}
+
+#[allow(dead_code)]
+static INIT_GUARDLOG_MATCHER: Once = ONCE_INIT;
+static mut GUARDLOG_MATCHER: Option<Regex> = None;
+static mut GUARDEVENT_MATCHER: Option<Regex> = None;
+
+#[allow(dead_code)]
+impl GuardLog {
+    pub fn from_str(s: &str) -> GuardLog {
+        INIT_GUARDLOG_MATCHER.call_once(|| {
+            unsafe {
+                GUARDLOG_MATCHER = Some(Regex::new(r"^\[([0-9\- :]+)\] (.+)$").unwrap());
+                GUARDEVENT_MATCHER = Some(Regex::new(r"#([0-9]+)").unwrap());
+            }
+        });
+        /*
+        [1518-08-17 00:01] Guard #1021 begins shift
+        [1518-03-16 00:39] falls asleep
+        [1518-03-10 00:56] wakes up
+        */
+        let glm = unsafe { GUARDLOG_MATCHER.clone().unwrap() };
+        let time_event = glm.captures(s).unwrap();
+        let gem = unsafe { GUARDEVENT_MATCHER.clone().unwrap() };
+        
+        let ts = strptime(&time_event[1], "%Y-%m-%d %H:%M").unwrap();
+        
+        let event = &time_event[2];
+        let e = match gem.captures(&event) {
+            Some(cap) => {
+                let id = usize::from_str(&cap[1]).unwrap();
+                GuardEvent::BeginShift(id)
+            },
+            None => {
+                match event {
+                    "wakes up" => GuardEvent::WakeUp,
+                    _ => GuardEvent::FallAsleep,
+                }
+            }
+        };
+
+        GuardLog{ts, e}
     }
 }
 
@@ -221,5 +307,12 @@ mod tests {
         for (input, expected) in test_vectors {
             assert_eq!(expected, FabricClaim::from_str(input).area());
         }
+    }
+
+    #[test]
+    fn test_guard_log_from_str() {
+        println!("{:?}", GuardLog::from_str("[1518-08-17 00:01] Guard #1021 begins shift"));
+        println!("{:?}", GuardLog::from_str("[1518-03-16 00:39] falls asleep"));
+        println!("{:?}", GuardLog::from_str("[1518-03-10 00:56] wakes up"));
     }
 }

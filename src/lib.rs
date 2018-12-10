@@ -1,3 +1,6 @@
+extern crate time;
+extern crate regex;
+
 mod bitmap;
 mod parse;
 
@@ -201,5 +204,160 @@ mod tests {
 
         let uncut = remaining.into_iter().next().unwrap();
         assert_eq!(1097, uncut.id);
+    }
+
+    #[test]
+    fn day04a() {
+        use std::collections::{BTreeSet, HashMap};
+        use parse::{GuardEvent, GuardLog};
+        type RowIndex = usize;
+        type GuardId = usize;
+        type Minute = usize;
+
+        let input = load("04a.txt");
+        let logs: BTreeSet<GuardLog> = input.split('\n')
+            .map(|line| GuardLog::from_str(line))
+            .collect();
+        
+        let unique_guard_ids: BTreeSet<GuardId> = (&logs).into_iter()
+            .map(|log| {
+                match log.e {
+                    GuardEvent::BeginShift(id) => Some(id),
+                    _ => None,
+                }
+            })
+            .filter(|id| id.is_some())
+            .map(|id| id.unwrap())
+            .collect();
+        let guard_ids: Vec<GuardId> = unique_guard_ids.into_iter().collect();
+        let guard_indices: HashMap<GuardId, RowIndex> = (&guard_ids).into_iter()
+            .enumerate()
+            .map(|(row_idx, guard_id)| (*guard_id, row_idx))
+            .collect();
+
+        use crate::bitmap::Bitmap;
+        let mut sleep_schedule = Bitmap::new(60, guard_ids.len(), 0usize);
+
+        let mut current_guard: Option<GuardId> = None;
+        let mut asleep: Option<Minute> = None;
+        for log in logs {
+            match log.e {
+                GuardEvent::BeginShift(id) => current_guard = Some(id),
+                GuardEvent::FallAsleep => asleep = Some(log.ts.tm_min as usize),
+                GuardEvent::WakeUp => {
+                    let sleep_duration = (log.ts.tm_min as usize) - asleep.unwrap();
+                    let row_idx = (&guard_indices).get(&current_guard.unwrap()).unwrap();
+                    &sleep_schedule.draw_rectangle(asleep.unwrap(), *row_idx, sleep_duration, 1, |x| x + 1);
+                },
+            }
+        }
+
+        let (sleepiest_row_index, _) = (&sleep_schedule).rows().into_iter()
+            .map(|row| row.into_iter().sum())
+            .enumerate()
+            .fold((0, 0), |a, b| {
+                let (_, a_count) = a;
+                let (_, b_count) = b;
+                if a_count > b_count {
+                    a
+                } else {
+                    b
+                }
+            });
+        let sleepiest_guard_id = guard_ids.get(sleepiest_row_index).unwrap();
+        
+        let schedule_rows = sleep_schedule.rows();
+        let sleepiest_guard_schedule = schedule_rows.get(sleepiest_row_index).unwrap();
+        let (sleepiest_minute, _) = sleepiest_guard_schedule.into_iter()
+            .enumerate()
+            .fold((0, &0), |a, b| {
+                let (_, a_count) = a;
+                let (_, b_count) = b;
+                if a_count > b_count {
+                    a
+                } else {
+                    b
+                }
+            });
+        
+        let answer = sleepiest_guard_id*sleepiest_minute;
+        assert_eq!(95199, answer);
+    }
+
+    #[test]
+    fn day04b() {
+        use std::collections::{BTreeSet, HashMap};
+        use parse::{GuardEvent, GuardLog};
+        type RowIndex = usize;
+        type GuardId = usize;
+        type Minute = usize;
+
+        let input = load("04a.txt");
+        let logs: BTreeSet<GuardLog> = input.split('\n')
+            .map(|line| GuardLog::from_str(line))
+            .collect();
+        
+        let unique_guard_ids: BTreeSet<GuardId> = (&logs).into_iter()
+            .map(|log| {
+                match log.e {
+                    GuardEvent::BeginShift(id) => Some(id),
+                    _ => None,
+                }
+            })
+            .filter(|id| id.is_some())
+            .map(|id| id.unwrap())
+            .collect();
+        let guard_ids: Vec<GuardId> = unique_guard_ids.into_iter().collect();
+        let guard_indices: HashMap<GuardId, RowIndex> = (&guard_ids).into_iter()
+            .enumerate()
+            .map(|(row_idx, guard_id)| (*guard_id, row_idx))
+            .collect();
+
+        use crate::bitmap::Bitmap;
+        let mut sleep_schedule = Bitmap::new(60, guard_ids.len(), 0usize);
+
+        let mut current_guard: Option<GuardId> = None;
+        let mut asleep: Option<Minute> = None;
+        for log in logs {
+            match log.e {
+                GuardEvent::BeginShift(id) => current_guard = Some(id),
+                GuardEvent::FallAsleep => asleep = Some(log.ts.tm_min as usize),
+                GuardEvent::WakeUp => {
+                    let sleep_duration = (log.ts.tm_min as usize) - asleep.unwrap();
+                    let row_idx = (&guard_indices).get(&current_guard.unwrap()).unwrap();
+                    &sleep_schedule.draw_rectangle(asleep.unwrap(), *row_idx, sleep_duration, 1, |x| x + 1);
+                },
+            }
+        }
+
+        let (sleepiest_row_idx, (sleepiest_minute, _)) = sleep_schedule.rows().into_iter()
+            .map(|row| {
+                row.into_iter()
+                    .enumerate()
+                    .fold((0, 0), |a, b| {
+                        let (_, a_count) = a;
+                        let (_, b_count) = b;
+                        if a_count > b_count {
+                            a
+                        } else {
+                            b
+                        }
+                    })
+            })
+            .enumerate()
+            .fold((0, (0, 0)), |a, b| {
+                let (_, (_, a_count)) = a;
+                let (_, (_, b_count)) = b;
+                if a_count > b_count {
+                    a
+                } else {
+                    b
+                }
+            });
+        
+        let sleepiest_guard_id = guard_ids.get(sleepiest_row_idx).unwrap();
+        
+        let answer = sleepiest_guard_id*sleepiest_minute;
+        assert_eq!(7887, answer);
     }
 }

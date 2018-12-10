@@ -28,4 +28,14 @@ where
             }
         }
     }
+
+    pub fn rows(&self) -> Vec<Vec<A>> {
+        let mut rows = Vec::new();
+        for y in 0 .. self.h {
+            let idx = y * self.w;
+            let row = self.field[idx .. idx+self.w].to_vec();
+            rows.push(row);
+        }
+        rows
+    }
 }

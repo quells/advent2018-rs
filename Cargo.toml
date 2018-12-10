@@ -6,3 +6,4 @@ authors = ["Kai Wells <support@kaiwells.me>"]
 [dependencies]
 time = "0.1"
 regex = "1"
+rayon = "1.0"

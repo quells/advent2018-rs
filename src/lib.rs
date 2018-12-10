@@ -1,5 +1,6 @@
 extern crate time;
 extern crate regex;
+extern crate rayon;
 
 mod bitmap;
 mod parse;
@@ -359,5 +360,98 @@ mod tests {
         
         let answer = sleepiest_guard_id*sleepiest_minute;
         assert_eq!(7887, answer);
+    }
+
+    fn react(polymer: &[i8]) -> Vec<i8> {
+        let mut polymer = polymer.to_vec();
+        let mut idx = 0;
+
+        loop {
+            let copy = polymer.clone();
+            if idx >= copy.len() - 1 {
+                return polymer;
+            }
+
+            let a = copy.get(idx).unwrap();
+            let b = copy.get(idx+1).unwrap();
+            if a + b == 0 {
+                let mut lhs = copy[.. idx].to_vec();
+                let mut rhs = copy[idx+2 ..].to_vec();
+                lhs.append(&mut rhs);
+                polymer = lhs;
+                if idx > 0 {
+                    idx -= 1;
+                }
+                continue;
+            }
+
+            idx += 1;
+        }
+    }
+
+    #[test]
+    fn day05a() {
+        let input = load("05a.txt");
+        let polarized: Vec<i8> = input.into_bytes().into_iter()
+            .map(|c| {
+                let signed = c as i16;
+                match c.is_ascii_uppercase() {
+                    true => signed - ('A' as i16) + 1,
+                    false => ('a' as i16) - signed - 1,
+                }
+            })
+            .map(|c| c as i8)
+            .collect();
+        let reacted = react(&polarized);
+
+        for (idx, a) in (&reacted).into_iter().enumerate() {
+            if idx < reacted.len() - 1 {
+                let b = -reacted.get(idx+1).unwrap();
+                assert_ne!(*a, b);
+            }
+        }
+
+        assert_eq!(11194, reacted.len());
+    }
+
+    #[test]
+    fn day05b() {
+        use rayon::prelude::*;
+        
+        let input = load("05a.txt");
+        let polarized: Vec<i8> = input.into_bytes().into_iter()
+            .map(|c| {
+                let signed = c as i16;
+                match c.is_ascii_uppercase() {
+                    true => signed - ('A' as i16) + 1,
+                    false => ('a' as i16) - signed - 1,
+                }
+            })
+            .map(|c| c as i8)
+            .collect();
+        
+        let inhibitors: Vec<i8> = (1 ..= 26).collect();
+        
+        let results: Vec<(i8, usize)> = inhibitors.to_vec().par_iter()
+            .map(|inhibitor| {
+                let subset: Vec<_> = (&polarized).into_iter().filter(|x| **x != *inhibitor && -**x != *inhibitor).map(|x| *x).collect();
+                let reacted_len = react(&subset).len();
+                (*inhibitor, reacted_len)
+            })
+            .collect();
+        
+        let (inhibitor, shortest) = results.into_iter()
+            .fold((0, std::usize::MAX), |a, b| {
+                let (_, a_length) = a;
+                let (_, b_length) = b;
+                if a_length < b_length {
+                    a
+                } else {
+                    b
+                }
+            });
+
+        assert_eq!(3, inhibitor);
+        assert_eq!(4178, shortest);
     }
 }
